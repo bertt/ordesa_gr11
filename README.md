@@ -8,7 +8,7 @@ Live demo: https://bertt.github.io/ordesa_gr11/
 
 ## History
 
-2025-11-04: Fix terrain viewing PMTiles in FireFox by ranmeing .pmtiles to .pmtiles.gz 
+2025-11-04: Fix terrain viewing PMTiles in FireFox by renaming .pmtiles to .pmtiles.gz 
 
 https://github.com/protomaps/PMTiles/issues/584#issuecomment-3149278659
 
