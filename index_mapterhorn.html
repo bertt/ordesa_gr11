@@ -74,66 +74,81 @@
           // Create segments with gradient information for all features
           const segments = [];
           
-          // Process all LineString features
+          // Process all LineString and MultiLineString features
           for (let featureIndex = 0; featureIndex < geojsonData.features.length; featureIndex++) {
               const feature = geojsonData.features[featureIndex];
-              const coordinates = feature.geometry.coordinates;
+              const geometryType = feature.geometry.type;
               
-              // Process each segment within this feature
-              for (let i = 0; i < coordinates.length - 1; i++) {
-                  const coord1 = coordinates[i];
-                  const coord2 = coordinates[i + 1];
+              // Skip non-line features (e.g., Points)
+              if (geometryType !== 'LineString' && geometryType !== 'MultiLineString') {
+                  continue;
+              }
+              
+              // Handle both LineString and MultiLineString
+              const lineStrings = geometryType === 'LineString' 
+                  ? [feature.geometry.coordinates]
+                  : feature.geometry.coordinates;
+              
+              // Process each LineString
+              for (let lineIndex = 0; lineIndex < lineStrings.length; lineIndex++) {
+                  const coordinates = lineStrings[lineIndex];
                   
-                  // Query elevation for both points
-                  const elevation1 = map.queryTerrainElevation({lng: coord1[0], lat: coord1[1]}) || 0;
-                  const elevation2 = map.queryTerrainElevation({lng: coord2[0], lat: coord2[1]}) || 0;
-                  
-                  // Calculate distance between points using Haversine formula (in meters)
-                  const R = 6371000; // Earth's radius in meters
-                  const φ1 = coord1[1] * Math.PI / 180;
-                  const φ2 = coord2[1] * Math.PI / 180;
-                  const Δφ = (coord2[1] - coord1[1]) * Math.PI / 180;
-                  const Δλ = (coord2[0] - coord1[0]) * Math.PI / 180;
-                  
-                  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                            Math.cos(φ1) * Math.cos(φ2) *
-                            Math.sin(Δλ/2) * Math.sin(Δλ/2);
-                  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                  const horizontalDistance = R * c;
-                  
-                  // Calculate gradient as percentage
-                  const elevationChange = elevation2 - elevation1;
-                  const gradient = horizontalDistance > 0 ? (elevationChange / horizontalDistance) * 100 : 0;
-                  
-                  // Determine color based on gradient
-                  let color;
-                  if (gradient < -15) {
-                      color = '#00008B'; // Dark Blue: Steep descent
-                  } else if (gradient < -8) {
-                      color = '#4169E1'; // Light Blue: Moderate descent
-                  } else if (gradient < -3) {
-                      color = '#00CED1'; // Cyan: Gentle descent
-                  } else if (gradient < 3) {
-                      color = '#00FF00'; // Green: Flat terrain
-                  } else if (gradient < 8) {
-                      color = '#FFFF00'; // Yellow: Gentle climb
-                  } else if (gradient < 15) {
-                      color = '#FF8C00'; // Orange: Moderate climb
-                  } else {
-                      color = '#8B0000'; // Dark Red: Steep climb
-                  }
-                  
-                  segments.push({
-                      type: 'Feature',
-                      properties: {
-                          gradient: gradient,
-                          color: color
-                      },
-                      geometry: {
-                          type: 'LineString',
-                          coordinates: [coord1, coord2]
+                  // Process each segment within this LineString
+                  for (let i = 0; i < coordinates.length - 1; i++) {
+                      const coord1 = coordinates[i];
+                      const coord2 = coordinates[i + 1];
+                      
+                      // Query elevation for both points
+                      const elevation1 = map.queryTerrainElevation({lng: coord1[0], lat: coord1[1]}) || 0;
+                      const elevation2 = map.queryTerrainElevation({lng: coord2[0], lat: coord2[1]}) || 0;
+                      
+                      // Calculate distance between points using Haversine formula (in meters)
+                      const R = 6371000; // Earth's radius in meters
+                      const φ1 = coord1[1] * Math.PI / 180;
+                      const φ2 = coord2[1] * Math.PI / 180;
+                      const Δφ = (coord2[1] - coord1[1]) * Math.PI / 180;
+                      const Δλ = (coord2[0] - coord1[0]) * Math.PI / 180;
+                      
+                      const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                                Math.cos(φ1) * Math.cos(φ2) *
+                                Math.sin(Δλ/2) * Math.sin(Δλ/2);
+                      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                      const horizontalDistance = R * c;
+                      
+                      // Calculate gradient as percentage
+                      const elevationChange = elevation2 - elevation1;
+                      const gradient = horizontalDistance > 0 ? (elevationChange / horizontalDistance) * 100 : 0;
+                      
+                      // Determine color based on gradient
+                      let color;
+                      if (gradient < -15) {
+                          color = '#00008B'; // Dark Blue: Steep descent
+                      } else if (gradient < -8) {
+                          color = '#4169E1'; // Light Blue: Moderate descent
+                      } else if (gradient < -3) {
+                          color = '#00CED1'; // Cyan: Gentle descent
+                      } else if (gradient < 3) {
+                          color = '#00FF00'; // Green: Flat terrain
+                      } else if (gradient < 8) {
+                          color = '#FFFF00'; // Yellow: Gentle climb
+                      } else if (gradient < 15) {
+                          color = '#FF8C00'; // Orange: Moderate climb
+                      } else {
+                          color = '#8B0000'; // Dark Red: Steep climb
                       }
-                  });
+                      
+                      segments.push({
+                          type: 'Feature',
+                          properties: {
+                              gradient: gradient,
+                              color: color
+                          },
+                          geometry: {
+                              type: 'LineString',
+                              coordinates: [coord1, coord2]
+                          }
+                      });
+                  }
               }
           }
           
